@@ -1,23 +1,39 @@
-name: Run Gold Bot 24/7
+import requests
 
-on:
-  push:
-    branches: [ main ]
-  schedule:
-    - cron: '*/5 * * * *'
+# بيانات تليجرام الخاصة بك
+TOKEN = "أدخل_توكن_البوت_هنا"
+CHAT_ID = "أدخل_معرف_الشات_هنا"
 
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-    - name: Install dependencies
-      run: |
-        pip install requests
-    - name: Run bot script safely
-      run: |
-        python bot.py || echo "Bot execution handled"
+def send_telegram_message(message):
+    url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
+    payload = {
+        "chat_id": CHAT_ID,
+        "text": message
+    }
+    try:
+        response = requests.post(url, json=payload)
+        return response.json()
+    except Exception as e:
+        print(f"خطأ في إرسال الرسالة: {e}")
+
+def check_gold_price():
+    # جلب سعر الذهب اللحظي
+    try:
+        # رابط عام مجاني لجلب أسعار المعادن الحية
+        response = requests.get("https://api.gold-api.com/price/XAU")
+        data = response.json()
+        price = data.get("price")
+        
+        print(f"سعر الذهب الحالي: {price}")
+        
+        # الشرط: لو السعر وصل للمستوى المطلوب أو تجاوزه يبعت رسالة
+        if price and price >= 4050:
+            send_telegram_message(f"🚨 تنبيه هام: وصل سعر الذهب إلى {price}!")
+        else:
+            print("السعر الحالي لم يصل لـ 4050 بعد.")
+            
+    except Exception as e:
+        print(f"خطأ في جلب السعر: {e}")
+
+if __name__ == "__main__":
+    check_gold_price()
